@@ -31,7 +31,6 @@ from itertools import chain
 from keras.callbacks import ModelCheckpoint, Callback, TensorBoard, EarlyStopping, ReduceLROnPlateau
 from keras.layers.core import Dense, Activation, Dropout, Masking
 from keras.engine.topology import Input
-from keras.layers.recurrent import LSTM, RNN
 from keras.losses import categorical_crossentropy
 from keras.models import Sequential
 from keras.optimizers import RMSprop
@@ -39,6 +38,9 @@ from past.builtins import basestring
 from keras.models import load_model
 from keras.layers.wrappers import TimeDistributed
 from keras.layers.core import Flatten
+
+from keras.layers.recurrent import LSTM
+from model import QRNN
 
 
 def build_model(args):
