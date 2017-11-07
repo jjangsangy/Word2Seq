@@ -40,7 +40,8 @@ from keras.layers.wrappers import TimeDistributed
 from keras.layers.core import Flatten
 
 from keras.layers.recurrent import LSTM
-from model import QRNN
+
+p = functools.partial(print, sep='\t')
 
 
 def build_model(args):
@@ -97,7 +98,7 @@ def command_line(setup='encoder'):
                         help='Specify the split between validation and training data [default]: 0.15')
 
     if setup == 'decoder':
-        parser.add_argument('--temperature', '-t', default=1.0, type=float, metavar='t',
+        parser.add_argument('--temperature', '-t', default=0.8, type=float, metavar='t',
                             help='Set the temperature value for prediction on batch: [default]: 1.0')
         parser.add_argument('--output', '-s', default=2000, type=int, metavar='size',
                             help='Set the desired size of the characters decoded: [default]: 20000', )
@@ -115,7 +116,6 @@ def printer(args):
     """
     Helper print function on statistics
     """
-    p = functools.partial(print, sep='\t')
     p('Total Chars:', len(args.chars))
     p('Corpus Length:', len(args.text))
     p('NB Sequences:', len(args.sentences),
@@ -138,10 +138,10 @@ def get_text(datasets):
         with open(filepath, encoding='utf8 ') as fp:
             try:
                 text.append(fp.read())
-                print('Read:', filepath, sep='\t')
+                p('Reading File:', filepath)
             except UnicodeDecodeError:
-                print('Could Not Read', filepath, sep='\t')
-
+                p('Could Not Read:', filepath)
+    p('Total Files:', len(text), '\n')
     return '\n'.join(text)
 
 

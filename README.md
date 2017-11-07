@@ -2,7 +2,7 @@
 
 [![Apache License Version 2.0](https://img.shields.io/badge/license-Apache_2.0-green.svg)](LICENSE)
 
-![harry potter](./static/harry.gif)
+![harry potter](https://github.com/jjangsangy/Word2Seq/raw/master/static/harry.gif)
 
 This implements a char-rnn, as made famous by
 [Andrei Karpathy's work](http://karpathy.github.io/2015/05/21/rnn-effectiveness/) on
@@ -291,6 +291,37 @@ static int __exit_exit(struct sl_bus_func *ebt_reg, struct nvkm_map *dev)
 青塵埃
 ```
 
+## Fox News
+
+```
+Fox News
+Date: 2016-11-07
+Trump and the Bond
+
+“Trump is, as the district," said State Department’s new strategist.
+The legal officials people and it would be the new president,
+every "entiple winning to this dasham other appeared many and
+policy, and is new strategist”.
+
+For President America. By the latest running
+presidential Hillary Clinton isn’t a christian. The issue of
+internet in on email and friends.
+
+“To don't continue to be to child” likely to be not be one
+Clinton told Fox.
+
+The 2015 on Hillary Clinton was released the she get to go or
+nearly campaign even the president for the finalist to top
+about the Washington and a bird resting possible to
+be removed latest between the forward.
+
+The source and subtracting to do a case of exiles of the first state
+More of a more decision and secretary into the battering the FBI and
+A Cheney Republican said "Trump is criminal server, who went”
+Portion to be this were voters and any team would have this criticism
+who this company do several diplomatic history emails with Trump on a state's endorse.
+```
+
 # Installation
 
 Currently only runs on Python 3, you can install dependencies using `pip`
@@ -357,5 +388,5 @@ To debug we've written log files in the log directory. In order to access these 
 $ tensorboard --logdir=./logs
 ```
 
-![graph](./static/graph.png)
-![tensorboard](./static/tensorboard.png)
+![graph](https://github.com/jjangsangy/Word2Seq/raw/master/static/graph.png)
+![tensorboard](https://github.com/jjangsangy/Word2Seq/raw/master/static/tensorboard.png)
