@@ -1,6 +1,5 @@
 models/
 datasets/
-*.ipynb
 .ipynb_checkpoints/
 .vscode/
 logs/

@@ -44,12 +44,19 @@ from keras.layers.recurrent import LSTM
 p = functools.partial(print, sep='\t')
 
 
+def print_model(model, args):
+    p('LSTM Layers:', args.layers)
+    p('LSTM Dropout:', args.dropout)
+    p('LSTM Optimizer:', args.optimizer)
+    print(model.summary())
+
+
 def build_model(args):
     """
     Build a Stateful Stacked LSTM Network with n-stacks specified by args.layers
     """
     layers = list(reversed(range(1, args.layers)))
-    params = dict(return_sequences=True, dropout=args.dropout, stateful=True,
+    params = dict(return_sequences=True, stateful=True, dropout=args.dropout,
                   batch_input_shape=(args.batch, args.window, len(args.chars)))
     model = Sequential()
 
@@ -61,11 +68,13 @@ def build_model(args):
         del params['return_sequences']
         model.add(LSTM(args.batch, **params))
 
-    model.add(Dense(len(args.chars), activation='softmax', name='output'))
+    model.add(Dense(len(args.chars), name='softmax', activation='softmax'))
 
     model.compile(loss=categorical_crossentropy,
-                  optimizer='rmsprop',
+                  optimizer=args.optimizer,
                   metrics=['accuracy'])
+
+    print_model(model, args)
 
     return model
 
@@ -74,37 +83,44 @@ def command_line(setup='encoder'):
     """
     Parameterze training and prediction scripts for encoder and decoder character rnn's
     """
+    model, layers, batch_size, dropout, window, log_dir, split = 'models/model.h5', 3, 128, 0.2, 40, None, 0.15
     parser = argparse.ArgumentParser(description='Train a neural network')
 
     parser.add_argument('--verbose', '-v', action='count', default=0,
                         help='Keras verbose output')
-    parser.add_argument('--batch', '-b',  metavar='size', default=128,
-                        type=int, help='Specify the input batch size')
-    parser.add_argument('--model', '-m', metavar='file',
-                        default='models/model.h5',
-                        help='Specify the output model hdf5 file to save to: [default]: models/model.h5')
-    parser.add_argument('--layers', '-l', default=3, type=int, metavar='deep',
-                        help='Specify the number of layers deep of LSTM nodes: [default]: 3')
-
-    parser.add_argument('--dropout', '-d', default=0.2, type=float, metavar='amount',
-                        help='Amount of LSTM dropout to apply between 0.0 - 1.0: [default]: 0.2')
     parser.add_argument('--resume', action='count',
-                        help='Resume from saved model file rather than creating a new model')
-    parser.add_argument('--window', '-w', default=40, type=int, metavar='length',
-                        help='Specify the size of the window size to train on: [default]: 40')
-    parser.add_argument('--log_dir', '-r', default=None, metavar='directory',
-                        help='Specify the output directory for tensorflow logs: [default]: None')
-    parser.add_argument('--split', '-p', default=0.15, type=float, metavar='size',
-                        help='Specify the split between validation and training data [default]: 0.15')
+                        help=f'Resume from saved model file rather than creating a new model at {model}')
+    parser.add_argument('--batch', '-b',  metavar='size', default=batch_size,
+                        type=int, help=f'Specify the input batch size for LSTM lyaers: [default]: {batch_size}')
+    parser.add_argument('--model', '-m', metavar='file', default=model,
+                        help=f'Specify the output model hdf5 file to save to: [default]: {model}')
+    parser.add_argument('--layers', '-l', default=3, type=int, metavar='deep',
+                        help=f'Specify the number of layers deep of LSTM nodes: [default]: {layers}')
+
+    parser.add_argument('--dropout', '-d', default=dropout, type=float, metavar='amount',
+                        help=f'Amount of LSTM dropout to apply between 0.0 - 1.0: [default]: {dropout}')
+    parser.add_argument('--window', '-w', default=window, type=int, metavar='length',
+                        help=f'Specify the size of the window size to train on: [default]: {window}')
+    parser.add_argument('--log_dir', '-r', default=log_dir, metavar='directory',
+                        help=f'Specify the output directory for tensorflow logs: [default]: {log_dir}')
+    parser.add_argument('--split', '-p', default=split, type=float, metavar='size',
+                        help=f'Specify the split between validation and training data [default]: {split}')
 
     if setup == 'decoder':
-        parser.add_argument('--temperature', '-t', default=0.8, type=float, metavar='t',
-                            help='Set the temperature value for prediction on batch: [default]: 1.0')
-        parser.add_argument('--output', '-s', default=2000, type=int, metavar='size',
-                            help='Set the desired size of the characters decoded: [default]: 20000', )
+        temperature, output = 0.8, 2000
+        parser.add_argument('--temperature', '-t', default=float(temperature), type=float, metavar='t',
+                            help=f'Set the temperature value for prediction on batch: [default]: ${temperature}')
+        parser.add_argument('--output', '-o', default=int(output), type=int, metavar='size',
+                            help=f'Set the desired size of the characters decoded: [default]: ${output}', )
+
     if setup == 'encoder':
-        parser.add_argument('--epochs', '-e', default=50, type=int, metavar='num',
-                            help='Specify for however many epochs to train over [default]: 50')
+        epochs, optimizer, monitor = 50, 'nadam', 'val_loss'
+        parser.add_argument('--epochs', '-e', default=epochs, type=int, metavar='num',
+                            help=f'Specify for however many epochs to train over [default]: {epochs}')
+        parser.add_argument('--optimizer', '-o', default=optimizer, type=str, metavar='optimizer',
+                            help=f'Specify optimizer used to train gradient descent: [default]: {optimizer}')
+        parser.add_argument('--monitor', '-n', default=monitor, type=str, metavar='monitor',
+                            help=f'Specify value to monitor for training/building model: [defaut]: {monitor}')
 
     args = parser.parse_args()
     args.sentences = []
@@ -122,8 +138,6 @@ def printer(args):
       'of [{window}]'.format(window=args.window))
     p('Outout File:', args.model)
     p('Log Directory:', args.log_dir)
-    p('LSTM Layers:', args.layers)
-    p('LSTM Dropout:', args.dropout)
 
 
 def get_text(datasets):
@@ -190,18 +204,18 @@ def main():
     """
     Main entry point for training network
     """
-    args = parameterize(command_line())
+    args = parameterize(command_line('encoder'))
 
     # Build Model
     model = (
         load_model(args.model) if os.path.exists(args.model) and args.resume else build_model(args)
     )
 
-    print(model.summary())
-
     callbacks = [
-        ModelCheckpoint(args.model, save_best_only=True, monitor='val_loss', verbose=args.verbose),
-        ReduceLROnPlateau(factor=0.2, patience=2, monitor='val_loss', verbose=args.verbose)
+        ModelCheckpoint(args.model, save_best_only=True,
+                        monitor=args.monitor, verbose=args.verbose),
+        ReduceLROnPlateau(factor=0.2, patience=2,
+                          monitor=args.monitor, verbose=args.verbose),
     ]
 
     if args.log_dir:
