@@ -27,7 +27,6 @@ def command_line(setup):
     if setup == 'encoder':
         dropout, layers, log_dir = 0.2, 3, None
         epochs, optimizer, monitor, split = 50, 'nadam', 'val_loss', 0.15
-
         parser.add_argument('--log_dir', '-r', default=log_dir, metavar='directory',
                             help=f'Specify the output directory for tensorflow logs: [default]: {log_dir}')
         parser.add_argument('--split', '-p', default=split, type=float, metavar='size',

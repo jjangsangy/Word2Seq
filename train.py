@@ -42,8 +42,8 @@ from keras.layers.core import Flatten
 from keras.layers.recurrent import LSTM
 
 from cli import command_line
-from text import get_text, load_chars
-from callbacks import CharRNNCheckpoint
+from text import get_text
+from text import CHARS, CHAR_IND, IND_CHAR
 
 
 p = functools.partial(print, sep='\t')
@@ -62,7 +62,7 @@ def build_model(args):
     """
     layers = list(reversed(range(1, args.layers)))
     params = dict(return_sequences=True, stateful=True, dropout=args.dropout,
-                  batch_input_shape=(args.batch, args.window, len(args.chars)))
+                  batch_input_shape=(args.batch, args.window, len(CHARS)))
     model = Sequential()
 
     while layers:
@@ -73,7 +73,7 @@ def build_model(args):
         del params['return_sequences']
         model.add(LSTM(args.batch, **params))
 
-    model.add(Dense(len(args.chars), name='softmax', activation='softmax'))
+    model.add(Dense(len(CHARS), name='softmax', activation='softmax'))
 
     model.compile(loss=categorical_crossentropy,
                   optimizer=args.optimizer,
@@ -88,7 +88,6 @@ def printer(args):
     """
     Helper print function on statistics
     """
-    p('Total Chars:', len(args.chars))
     p('Corpus Length:', len(args.text))
     p('NB Sequences:', len(args.sentences),
       'of [{window}]'.format(window=args.window))
@@ -111,11 +110,8 @@ def parameterize(args):
     Parameterize argparse namespace with more parameters generated from dataset
     """
     args.text = get_text('datasets')
-    args.chars = load_chars(args.model) if args.resume else sorted(list(set(args.text)))
     args.sentences = []
     args.next_chars = []
-    args.char_indices = dict((c, i) for i, c in enumerate(args.chars))
-    args.indices_char = dict((i, c) for i, c in enumerate(args.chars))
 
     for i in range(0, len(args.text) - args.window, 1):
         args.sentences.append(args.text[i: i + args.window])
@@ -128,13 +124,13 @@ def parameterize(args):
     args.sentences = args.sentences[0: max_window]
     args.next_chars = args.next_chars[0: max_window]
 
-    args.X = np.zeros((max_window, args.window, len(args.chars)), dtype=np.bool)
-    args.y = np.zeros((max_window,              len(args.chars)), dtype=np.bool)
+    args.X = np.zeros((max_window, args.window, len(CHARS)), dtype=np.bool)
+    args.y = np.zeros((max_window,              len(CHARS)), dtype=np.bool)
 
     for i, sentence in enumerate(args.sentences):
         for t, char in enumerate(sentence):
-            args.X[i, t, args.char_indices[char]] = 1
-        args.y[i, args.char_indices[args.next_chars[i]]] = 1
+            args.X[i, t, CHAR_IND[char]] = 1
+        args.y[i, CHAR_IND[args.next_chars[i]]] = 1
 
     return train_validation_split(args)
 
@@ -151,8 +147,8 @@ def main():
     )
 
     callbacks = [
-        CharRNNCheckpoint(args.chars, args.model, save_best_only=True,
-                          monitor=args.monitor, verbose=args.verbose),
+        ModelCheckpoint(args.model, save_best_only=True,
+                        monitor=args.monitor, verbose=args.verbose),
         ReduceLROnPlateau(factor=0.2, patience=2,
                           monitor=args.monitor, verbose=args.verbose),
     ]

@@ -12,19 +12,14 @@ import numpy as np
 
 from train import parameterize
 from cli import command_line
-from text import get_text, load_chars
+from text import get_text
+from text import CHARS, IND_CHAR, CHAR_IND
 
 np.seterr(divide='ignore')
 
-
 args = command_line('decoder')
-chars = load_chars(args.model)
 text = get_text('datasets')
-args.char_indices = dict((c, i) for i, c in enumerate(chars))
-args.indices_char = dict((i, c) for i, c in enumerate(chars))
 window_size = args.window
-indices_char = args.indices_char
-char_indices = args.char_indices
 
 
 def sample(preds, t=1.0):
@@ -62,13 +57,13 @@ sys.stdout.flush()
 
 for _ in range(args.output):
 
-    x = np.zeros((args.batch, window_size, len(chars)))
+    x = np.zeros((args.batch, window_size, len(CHARS)))
     for t, char in enumerate(sentence):
-        x[0, t, char_indices[char]] = 1.
+        x[0, t, CHAR_IND[char]] = 1.
 
     preds = model.predict_on_batch(x)
     next_index = sample(preds[0], t=args.temperature)
-    next_char = indices_char[next_index]
+    next_char = IND_CHAR[next_index]
 
     generated += next_char
     sentence = sentence[1:] + next_char
