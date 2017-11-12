@@ -1,7 +1,7 @@
 Training a Recurrent Neural Network for Text Generation
 =======================================================
 
-|Apache License Version 2.0|
+|Apache License Version 2.0| |PyPI version|
 
 .. figure:: https://github.com/jjangsangy/Word2Seq/raw/master/static/harry.gif
    :alt: harry potter
@@ -351,68 +351,134 @@ Fox News
     Portion to be this were voters and any team would have this criticism
     who this company do several diplomatic history emails with Trump on a state's endorse.
 
-Installation
-============
-
-Currently only runs on Python 3, you can install dependencies using
-``pip``
+CoinDesk
+--------
 
 ::
 
-    $ pip3 install -r requirements.txt
+    According to The DAO
+
+    According to The DAO official financial services and compliance ledger
+    finances are taken with the market of a distributed ledger statement
+
+    "It's the company's international industry"
+
+    Additional entry plans to be wide revealed to include call the detail of the affective
+    in effectively data, one open solutions of two wider way to a revalue more to ensure the US
+    has the ability to the government with the smart contract funding with a major
+    month and fell which has adopted a new, there are described a
+    hacking currently raising a "Option" (was overall in the data).
+
+    They are looking to trade in volume on the Ethereum Foundation.
+
+    The filing can expect to open statements with the acquisition of the company
+    exchange Singapore's of DAOs and government (LICAF)
+
+    The board is that the first test co-founder mission.
+
+Installation
+============
+
+Currently only runs on Python 3 (because I can), you can install
+dependencies using ``pip``
+
+.. code:: sh
+
+    $ pip3 install charrnn
+
+Usage
+=====
+
+This package installs a command line application called ``charrnn``
+
+.. code:: sh
+
+    $ charrnn --help
+    usage: charrnn [-h] [--verbose] [--model file] [--window length]
+                   [--batch size] [--datasets directory]
+                   {train,decode} ...
+
+    Train a neural network
+
+    positional arguments:
+      {train,decode}        Help train or produce output from your neural network
+        train               Train your character recurrent neural net
+        decode              Output from previously trained network
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      --verbose, -v         Keras verbose output
+      --model file, -m file
+                            Specify the model hdf5 file to save to or load from:
+                            [default]: models/model.h5
+      --window length, -w length
+                            Specify the size of the window size to train on:
+                            [default]: 40
+      --batch size, -b size
+                            Specify the input batch size for LSTM layers:
+                            [default]: 128
+      --datasets directory, -t directory
+                            Specify the directory where the datasets are located
+                            [default]: datasets
 
 Training
 --------
 
-Place your corpuse[s] into the ``datasets`` folder and run
-
-.. code:: sh
-
-    $ python3 train.py
+Place your corpuse[s] into the ``datasets`` folder or specify it on the
+command line
 
 To customize the parameters for generating text you can parameterize
 with input arguments.
 
 .. code:: sh
 
-    $ python3 train.py --help
-
-    usage: train.py [-h] [--verbose] [--batch size] [--model file]
-                    [--window length] [--log_dir directory] [--layers deep]
-                    [--dropout amount] [--skip amount]
-
-    Train a neural network
+    $ charrnn train
+    usage: charrnn train [-h] [--log_dir directory] [--split size] [--layers deep]
+                         [--dropout amount] [--resume] [--epochs num]
+                         [--optimizer optimizer] [--monitor monitor]
 
     optional arguments:
       -h, --help            show this help message and exit
-      --verbose, -v         Keras verbose output
-      --batch size, -b size
-                            Specify the input batch size
-      --model file, -m file
-                            Specify the output model hdf5 file to save to:
-                            [default]: models/model.h5
-      --window length, -w length
-                            Specify the size of the window size to train on:
-                            [default]: 40
       --log_dir directory, -r directory
                             Specify the output directory for tensorflow logs:
                             [default]: None
+      --split size, -p size
+                            Specify the split between validation and training data
+                            [default]: 0.15
       --layers deep, -l deep
                             Specify the number of layers deep of LSTM nodes:
                             [default]: 3
       --dropout amount, -d amount
                             Amount of LSTM dropout to apply between 0.0 - 1.0:
                             [default]: 0.2
-      --skip amount, -s amount
-                            Amount to skip within the dataset, integer from 1:
-                            [default]: 1
+      --resume              Resume from saved model file rather than creating a
+                            new model at model.h5
+      --epochs num, -e num  Specify for however many epochs to train over
+                            [default]: 50
+      --optimizer optimizer, -o optimizer
+                            Specify optimizer used to train gradient descent:
+                            [default]: nadam
+      --monitor monitor, -n monitor
+                            Specify value to monitor for training/building model:
+                            [defaut]: val_loss
 
 Text Generation
 ---------------
 
+In order to generate text use the ``decode`` arg
+
 .. code:: sh
 
-    $ python3 decoder.py
+    usage: charrnn decode [-h] [--temperature t] [--output size]
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      --temperature t, -t t
+                            Set the temperature value for prediction on batch:
+                            [default]: 0.8
+      --output size, -o size
+                            Set the desired size of the characters decoded:
+                            [default]: 4000
 
 Debugging
 ---------
@@ -428,6 +494,8 @@ access these logs, you can run tensorboard.
 
 .. |Apache License Version 2.0| image:: https://img.shields.io/badge/license-Apache_2.0-green.svg
    :target: LICENSE
+.. |PyPI version| image:: https://badge.fury.io/py/charrnn.svg
+   :target: https://badge.fury.io/py/charrnn
 .. |graph| image:: https://github.com/jjangsangy/Word2Seq/raw/master/static/graph.png
 .. |tensorboard| image:: https://github.com/jjangsangy/Word2Seq/raw/master/static/tensorboard.png
 

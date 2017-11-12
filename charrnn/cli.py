@@ -6,7 +6,7 @@ def command_line():
     """
     Parameterze training and prediction scripts for encoder and decoder character RNN's
     """
-    model, datasets, window, batch = 'models/model.h5', 'datasets', 40, 128
+    model, datasets, window, batch = 'model.h5', 'datasets', 40, 128
     parser = ArgumentParser(prog='charrnn', description='Train a neural network')
 
     parser.add_argument('--verbose', '-v', action='count', default=0,
