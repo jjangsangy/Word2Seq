@@ -345,10 +345,11 @@ coverage was a realize management in Assam Paar used on on the most ways to star
 
 # Installation
 
-Currently only runs on Python 3, you can install dependencies using `pip`
+Currently only runs on Python 3 (because I can), you can install dependencies using `pip`
 
 ```
 $ pip3 install -r requirements.txt
+$ 
 ```
 
 ## Training
