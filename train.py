@@ -23,6 +23,7 @@ import sys
 import os
 import argparse
 import functools
+import h5py
 
 import numpy as np
 
@@ -32,17 +33,16 @@ from keras.callbacks import ModelCheckpoint, Callback, TensorBoard, EarlyStoppin
 from keras.layers.core import Dense, Activation, Dropout, Masking
 from keras.engine.topology import Input
 from keras.losses import categorical_crossentropy
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 from keras.optimizers import RMSprop
 from past.builtins import basestring
-from keras.models import load_model
 from keras.layers.wrappers import TimeDistributed
 from keras.layers.core import Flatten
 
 from keras.layers.recurrent import LSTM
 
 from cli import command_line
-from text import get_text
+from text import get_text, load_chars
 from callbacks import CharRNNCheckpoint
 
 
@@ -111,7 +111,9 @@ def parameterize(args):
     Parameterize argparse namespace with more parameters generated from dataset
     """
     args.text = get_text('datasets')
-    args.chars = sorted(list(set(args.text)))
+    args.chars = load_chars(args.model) if args.resume else sorted(list(set(args.text)))
+    args.sentences = []
+    args.next_chars = []
     args.char_indices = dict((c, i) for i, c in enumerate(args.chars))
     args.indices_char = dict((i, c) for i, c in enumerate(args.chars))
 
