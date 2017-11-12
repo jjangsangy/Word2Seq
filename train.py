@@ -107,7 +107,7 @@ def command_line(setup='encoder'):
                         help=f'Specify the split between validation and training data [default]: {split}')
 
     if setup == 'decoder':
-        temperature, output = 0.8, 2000
+        temperature, output = 0.8, 4000
         parser.add_argument('--temperature', '-t', default=float(temperature), type=float, metavar='t',
                             help=f'Set the temperature value for prediction on batch: [default]: ${temperature}')
         parser.add_argument('--output', '-o', default=int(output), type=int, metavar='size',
