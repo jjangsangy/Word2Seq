@@ -37,6 +37,12 @@ setup(
             'charrnn=charrnn.__main__:main'
         ],
     },
+    install_requires=[
+        'h5py>=2.7.1',
+        'Keras>=2.0.6',
+        'tensorflow',
+        'future',
+    ],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Console',

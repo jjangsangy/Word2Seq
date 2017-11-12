@@ -322,6 +322,27 @@ Portion to be this were voters and any team would have this criticism
 who this company do several diplomatic history emails with Trump on a state's endorse.
 ```
 
+## CoinDesk
+
+```
+According to The DAO
+
+According to The DAO official financial services and compliance ledger finances are taken with the market of a distributed ledger statement:
+
+"It's the company's international industry and previously will be published you decided what can see a compare the exchange and founders.
+
+Additional entry plans to be wide revealed to include call the detail of the affective
+in effectively data, one open solutions of two wider way to a revalue more ensure the US
+as the ability to the government with the smart contract funding with a major
+month and fell which has adopted a new, there are described a
+hacking currently raising a "Option (was overall in the data.
+
+And are looking to trick the volume on the Ethereum Foundation,
+has made that two questions, means information,
+but it will make any character operates at what is statented with
+coverage was a realize management in Assam Paar used on on the most ways to start.
+```
+
 # Installation
 
 Currently only runs on Python 3, you can install dependencies using `pip`
