@@ -24,7 +24,7 @@ setup(
     description='Automatic Web Article Summarizer',
     long_description='\n'.join(
         [
-            open('README.md', 'rb').read().decode('utf-8'),
+            open('README.rst', 'rb').read().decode('utf-8'),
         ]
     ),
     license='Apache License 2.0',
