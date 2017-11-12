@@ -10,24 +10,26 @@ import random
 
 import numpy as np
 
-from train import parameterize, command_line
+from train import parameterize
+from cli import command_line
+from text import get_text, load_chars
 
-args = parameterize(command_line('decoder'))
+np.seterr(divide='ignore')
 
 
-model_output = args.model
-chars = args.chars
-text = args.text
+args = command_line('decoder')
+chars = load_chars(args.model)
+text = get_text('datasets')
+args.char_indices = dict((c, i) for i, c in enumerate(chars))
+args.indices_char = dict((i, c) for i, c in enumerate(chars))
 window_size = args.window
 indices_char = args.indices_char
 char_indices = args.char_indices
 
 
-np.seterr(divide='ignore')
-
-
 def sample(preds, t=1.0):
-    """Helper function to sample from a probability distribution
+    """
+    Helper function to sample from a probability distribution
     """
     # Set float64 for due to numpy multinomial sampling issue
     # (https://github.com/numpy/numpy/issues/8317)
@@ -44,7 +46,7 @@ def random_sentence(text, beam_size):
     return text[start_index: start_index + beam_size]
 
 
-model = keras.models.load_model(model_output)
+model = keras.models.load_model(args.model)
 print(model.summary())
 
 sentence = random_sentence(text, window_size)
