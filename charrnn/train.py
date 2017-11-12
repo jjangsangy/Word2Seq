@@ -1,49 +1,25 @@
 # -*- coding: utf-8 -*-
 """
-Training a Recurrent Neural Network for Text Generation
-=======================================================
-This implements a char-rnn, which was heavily inspired from
-Andrei Karpathy's work on text generation and adapted from
-example code introduced by keras.
-(http://karpathy.github.io/2015/05/21/rnn-effectiveness/)
-
-It is recommended to run this script on GPU, as
-recurrent networks are quite computationally intensive.
-Make sure your corpus has >100k characters at least, but
-for the best >1M characters. That is around the size,
-of Harry Potter Book 7.
+Module for training CharRNN
 """
 from __future__ import print_function
 
-import keras
-import operator
-import pathlib
-import random
-import sys
 import os
-import argparse
 import functools
-import h5py
+
+import keras
 
 import numpy as np
 
-from builtins import str as stringify
-from itertools import chain
-from keras.callbacks import ModelCheckpoint, Callback, TensorBoard, EarlyStopping, ReduceLROnPlateau
-from keras.layers.core import Dense, Activation, Dropout, Masking
-from keras.engine.topology import Input
+from keras.callbacks import ModelCheckpoint, TensorBoard, ReduceLROnPlateau
+from keras.layers.core import Dense
+from keras.layers.recurrent import LSTM
 from keras.losses import categorical_crossentropy
 from keras.models import Sequential, load_model
-from keras.optimizers import RMSprop
-from past.builtins import basestring
-from keras.layers.wrappers import TimeDistributed
-from keras.layers.core import Flatten
 
-from keras.layers.recurrent import LSTM
-
-from cli import command_line
-from text import get_text
-from text import CHARS, CHAR_IND, IND_CHAR
+from .cli import command_line
+from .text import get_text
+from .text import CHARS, CHAR_IND, IND_CHAR
 
 
 p = functools.partial(print, sep='\t')
@@ -109,7 +85,7 @@ def parameterize(args):
     """
     Parameterize argparse namespace with more parameters generated from dataset
     """
-    args.text = get_text('datasets')
+    args.text = get_text(args.datasets)
     args.sentences = []
     args.next_chars = []
 
@@ -135,12 +111,11 @@ def parameterize(args):
     return train_validation_split(args)
 
 
-def main():
+def run(args):
     """
     Main entry point for training network
     """
-    args = parameterize(command_line('encoder'))
-
+    args = parameterize(args)
     # Build Model
     model = (
         load_model(args.model) if os.path.exists(args.model) and args.resume else build_model(args)
@@ -164,7 +139,3 @@ def main():
               callbacks=callbacks,
               shuffle=False,
               validation_data=(args.x_val, args.y_val))
-
-
-if __name__ == '__main__':
-    sys.exit(main())
