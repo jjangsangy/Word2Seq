@@ -1,5 +1,10 @@
 
-all:
+all: install
+
+install:
+	@python3 install setup.py
+
+dist:
 	@pip3 install --editable .
 
 upload:
@@ -7,4 +12,4 @@ upload:
 	@python3 setup.py sdist upload -r pypi
 
 clean:
-	@rm -rf *.egg dist build
+	@rm -rf charrnn.egg-info dist build
