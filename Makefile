@@ -2,7 +2,7 @@
 all: install
 
 install:
-	python3 install setup.py
+	python3 setup.py install
 
 dist:
 	pip3 install --editable .
