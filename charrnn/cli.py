@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 from argparse import ArgumentParser
 
+from . version import __version__ as version
+from . version import __build__ as build
+
 
 def command_line():
     """
@@ -8,7 +11,8 @@ def command_line():
     """
     model, datasets, window, batch = 'model.h5', 'datasets', 40, 128
     parser = ArgumentParser(prog='charrnn', description='Train a neural network')
-
+    parser.add_argument('--version', action='version',
+                        version='%(prog)s {version} {build}'.format(version=version, build=build))
     parser.add_argument('--verbose', '-v', action='count', default=0,
                         help='Keras verbose output')
     parser.add_argument('--model', '-m', metavar='file', default=model,
