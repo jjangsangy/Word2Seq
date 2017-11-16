@@ -23,6 +23,7 @@ def command_line():
     # Subparser
     subparsers = parser.add_subparsers(help='Help train or produce output from your neural network')
 
+    # Setup Defaults
     encoder = subparsers.add_parser('train', help='Train your character recurrent neural net')
     encoder.set_defaults(which='encode')
 
@@ -52,6 +53,7 @@ def command_line():
 
     # Decoder
     layers, temperature, output = 3, 0.8, 4000
+
     decoder.add_argument('--temperature', '-t', default=float(temperature), type=float, metavar='t',
                          help=f'Set the temperature value for prediction on batch: [default]: {temperature}')
     decoder.add_argument('--output', '-o', default=int(output), type=int, metavar='size',

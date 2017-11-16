@@ -124,7 +124,7 @@ def run(args):
     callbacks = [
         ModelCheckpoint(args.model, save_best_only=True,
                         monitor=args.monitor, verbose=args.verbose),
-        ReduceLROnPlateau(factor=0.2, patience=2,
+        ReduceLROnPlateau(factor=0.2, patience=1,
                           monitor=args.monitor, verbose=args.verbose),
     ]
 
