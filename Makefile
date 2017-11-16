@@ -2,14 +2,14 @@
 all: install
 
 install:
-	@python3 install setup.py
+	python3 install setup.py
 
 dist:
-	@pip3 install --editable .
+	pip3 install --editable .
 
 upload:
-	@pandoc --from=markdown --to=rst --output=README.rst README.md
-	@python3 setup.py sdist upload -r pypi
+	pandoc --from=markdown --to=rst --output=README.rst README.md
+	python3 setup.py sdist upload -r pypi
 
 clean:
-	@rm -rf charrnn.egg-info dist build
+	rm -rf charrnn.egg-info dist build
