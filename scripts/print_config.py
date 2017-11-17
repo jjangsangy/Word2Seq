@@ -6,6 +6,7 @@ import json
 import h5py
 import argparse
 import sys
+import os
 
 
 def cli():
@@ -21,10 +22,11 @@ def cli():
 
 def main():
     args = cli()
-    f = h5py.File(args.model)
-    config = json.loads(f.attrs[args.config].decode('utf8'))
-    print(json.dumps(config, sort_keys=True, indent=4))
-    f.close()
+    if not os.path.exists(args.model):
+        raise FileNotFoundError('Could not find file {}'.format(os.path.realpath(args.model)))
+    with h5py.File(args.model) as f:
+        config = json.loads(f.attrs[args.config].decode('utf8'))
+        print(json.dumps(config, sort_keys=True, indent=4))
 
 
 if __name__ == '__main__':
