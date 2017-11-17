@@ -69,3 +69,4 @@ venv.bak/
 .mypy_cache/
 logs/
 word2job.code-workspace
+run.sh

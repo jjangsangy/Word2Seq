@@ -6,7 +6,7 @@ from __future__ import print_function
 
 import os
 import functools
-
+import operator
 import keras
 
 import numpy as np
@@ -29,7 +29,63 @@ def print_model(model, args):
     p('LSTM Layers:', args.layers)
     p('LSTM Dropout:', args.dropout)
     p('LSTM Optimizer:', args.optimizer)
+    p('Learning Rate:', args.lr)
     print(model.summary())
+
+
+def printer(args):
+    """
+    Helper print function on statistics
+    """
+    p('Corpus Length:', len(args.text))
+    p('NB Sequences:', len(args.sentences),
+      'of [{window}]'.format(window=args.window))
+    p('Outout File:', args.model)
+    p('Log Directory:', args.log_dir)
+
+
+def parameterize(args):
+    """
+    Parameterize argparse namespace with more parameters generated from dataset
+    """
+    args.text = get_text(args.datasets)
+    args.sentences = []
+    args.next_chars = []
+
+    for i in range(0, len(args.text) - args.window, args.steps):
+        args.sentences.append(args.text[i: i + args.window])
+        args.next_chars.append(args.text[i + args.window])
+
+    # Print all the params
+    printer(args)
+
+    max_window = len(args.sentences) - (len(args.sentences) % args.batch)
+    args.sentences = args.sentences[0: max_window]
+    args.next_chars = args.next_chars[0: max_window]
+
+    X = np.zeros((max_window, args.window, len(CHARS)), dtype=np.bool)
+    y = np.zeros((max_window,              len(CHARS)), dtype=np.bool)
+
+    for i, sentence in enumerate(args.sentences):
+        for t, char in enumerate(sentence):
+            X[i, t, CHAR_IND[char]] = 1
+        y[i, CHAR_IND[args.next_chars[i]]] = 1
+
+    return X, y
+
+
+def gen(X, y, batch_size):
+    re_x = X.reshape((X.shape[0] // batch_size, batch_size, X.shape[1], X.shape[2]))
+    re_y = y.reshape((y.shape[0] // batch_size, batch_size, y.shape[1]))
+    while True:
+        for i in range(len(re_x)):
+            yield re_x[i], re_y[i]
+
+
+def get_optimzer(opt, lr):
+    grab = operator.attrgetter(opt)
+    gradient_descent = grab(keras.optimizers)
+    return gradient_descent(lr=lr)
 
 
 def build_model(args):
@@ -52,7 +108,7 @@ def build_model(args):
     model.add(Dense(len(CHARS), name='softmax', activation='softmax'))
 
     model.compile(loss=categorical_crossentropy,
-                  optimizer=args.optimizer,
+                  optimizer=get_optimzer(args.optimizer, args.lr),
                   metrics=['accuracy'])
 
     print_model(model, args)
@@ -60,62 +116,10 @@ def build_model(args):
     return model
 
 
-def printer(args):
-    """
-    Helper print function on statistics
-    """
-    p('Corpus Length:', len(args.text))
-    p('NB Sequences:', len(args.sentences),
-      'of [{window}]'.format(window=args.window))
-    p('Outout File:', args.model)
-    p('Log Directory:', args.log_dir)
-
-
-def train_validation_split(args):
-    """
-    Split training and validation data specified by args.split
-    """
-    v_split = round((len(args.X) // args.batch) * (1 - args.split)) * args.batch
-    args.x_train, args.y_train = args.X[:v_split], args.y[:v_split]
-    args.x_val, args.y_val = args.X[v_split:], args.y[v_split:]
-    return args
-
-
-def parameterize(args):
-    """
-    Parameterize argparse namespace with more parameters generated from dataset
-    """
-    args.text = get_text(args.datasets)
-    args.sentences = []
-    args.next_chars = []
-
-    for i in range(0, len(args.text) - args.window, 1):
-        args.sentences.append(args.text[i: i + args.window])
-        args.next_chars.append(args.text[i + args.window])
-
-    # Print all the params
-    printer(args)
-
-    max_window = len(args.sentences) - (len(args.sentences) % args.batch)
-    args.sentences = args.sentences[0: max_window]
-    args.next_chars = args.next_chars[0: max_window]
-
-    args.X = np.zeros((max_window, args.window, len(CHARS)), dtype=np.bool)
-    args.y = np.zeros((max_window,              len(CHARS)), dtype=np.bool)
-
-    for i, sentence in enumerate(args.sentences):
-        for t, char in enumerate(sentence):
-            args.X[i, t, CHAR_IND[char]] = 1
-        args.y[i, CHAR_IND[args.next_chars[i]]] = 1
-
-    return train_validation_split(args)
-
-
 def run(args):
     """
     Main entry point for training network
     """
-    args = parameterize(args)
     # Build Model
     model = (
         load_model(args.model) if os.path.exists(args.model) and args.resume else build_model(args)
@@ -132,10 +136,19 @@ def run(args):
         callbacks.append(TensorBoard(log_dir=args.log_dir, histogram_freq=10,
                                      write_grads=True, batch_size=args.batch))
 
+    X, y = parameterize(args)
+
+    v_split = round((len(X) // args.batch) * (1 - args.split)) * args.batch
+
+    x_train, y_train = X[:v_split], y[:v_split]
+    x_val, y_val = X[v_split:], y[v_split:]
+
     # Go Get Some Coffee
-    model.fit(x=args.x_train, y=args.y_train,
-              batch_size=args.batch,
-              epochs=args.epochs,
-              callbacks=callbacks,
-              shuffle=False,
-              validation_data=(args.x_val, args.y_val))
+    model.fit_generator(generator=gen(x_train, y_train, args.batch),
+                        steps_per_epoch=len(x_train) // args.batch,
+                        validation_data=gen(x_val, y_val, args.batch),
+                        validation_steps=len(x_val) // args.batch,
+                        epochs=args.epochs,
+                        callbacks=callbacks,
+                        use_multiprocessing=True,
+                        shuffle=False)

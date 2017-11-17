@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+"""
+Command Line Argument Parsing
+"""
 from argparse import ArgumentParser
 
 from . version import __version__ as version
@@ -16,7 +19,7 @@ def command_line():
                         help='Keras verbose output')
 
     # Options
-    model, window, batch, datasets = 'model.h5', 40, 128, 'datasets'
+    model, window, batch, datasets, steps = 'model.h5', 40, 128, 'datasets', 3
     parser.add_argument('--model', '-m', default=model, type=str, metavar='file',
                         help='Specify the model hdf5 file to save to or load from: [default]: {model}'.format(model=model))
     parser.add_argument('--window', '-w', default=window, type=int, metavar='length',
@@ -25,6 +28,8 @@ def command_line():
                         type=int, help='Specify the input batch size for LSTM layers: [default]: {batch}'.format(batch=batch))
     parser.add_argument('--datasets', '-t', metavar='directory', default=datasets, type=str,
                         help='Specify the directory where the datasets are located [default]: {datasets}'.format(datasets=datasets))
+    parser.add_argument('--steps', '-u', metavar='size', default=steps, type=int,
+                        help='Step size to conserve memory and speedup training [default]: {steps}'.format(steps=steps))
 
     # Subparser
     subparsers = parser.add_subparsers(help='Help train or produce output from your neural network')
@@ -37,7 +42,7 @@ def command_line():
     decoder.set_defaults(which='decode')
 
     # Encoder
-    dropout, layers, log_dir = 0.2, 3, None
+    dropout, layers, log_dir, lr = 0.2, 3, None, 0.002
     epochs, optimizer, monitor, split = 50, 'nadam', 'val_loss', 0.15
 
     encoder.add_argument('--resume', action='count',
@@ -56,6 +61,8 @@ def command_line():
                          help='Specify optimizer used to train gradient descent: [default]: {optimizer}'.format(optimizer=optimizer))
     encoder.add_argument('--monitor', '-n', default=monitor, type=str, metavar='monitor',
                          help='Specify value to monitor for training/building model: [defaut]: {monitor}'.format(monitor=monitor))
+    encoder.add_argument('--lr', '-a', default=lr, type=float, metavar='rate',
+                         help='Set the learning rate for gradient descet optimizer: [default]: {lr}'.format(lr=lr))
 
     # Decoder
     layers, temperature, output = 3, 0.8, 4000

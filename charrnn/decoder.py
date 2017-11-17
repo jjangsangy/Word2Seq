@@ -10,9 +10,9 @@ import random
 
 import numpy as np
 
-from .cli import command_line
-from .text import get_text
-from .text import CHARS, IND_CHAR, CHAR_IND
+from . cli import command_line
+from . text import get_text
+from . text import CHARS, IND_CHAR, CHAR_IND
 
 np.seterr(divide='ignore')
 
