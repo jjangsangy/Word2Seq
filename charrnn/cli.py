@@ -19,7 +19,7 @@ def command_line():
                         help='Keras verbose output')
 
     # Options
-    model, window, batch, datasets, steps = 'model.h5', 40, 128, 'datasets', 3
+    model, window, batch, datasets = 'model.h5', 40, 128, 'datasets'
     parser.add_argument('--model', '-m', default=model, type=str, metavar='file',
                         help='Specify the model hdf5 file to save to or load from: [default]: {model}'.format(model=model))
     parser.add_argument('--window', '-w', default=window, type=int, metavar='length',
@@ -28,8 +28,6 @@ def command_line():
                         type=int, help='Specify the input batch size for LSTM layers: [default]: {batch}'.format(batch=batch))
     parser.add_argument('--datasets', '-t', metavar='directory', default=datasets, type=str,
                         help='Specify the directory where the datasets are located [default]: {datasets}'.format(datasets=datasets))
-    parser.add_argument('--steps', '-u', metavar='size', default=steps, type=int,
-                        help='Step size to conserve memory and speedup training [default]: {steps}'.format(steps=steps))
 
     # Subparser
     subparsers = parser.add_subparsers(help='Help train or produce output from your neural network')
@@ -44,9 +42,12 @@ def command_line():
     # Encoder
     dropout, layers, log_dir, lr = 0.2, 3, None, 0.002
     epochs, optimizer, monitor, split = 50, 'nadam', 'val_loss', 0.15
+    steps, decay, optimizer_config = 3, 0.5, ''
 
     encoder.add_argument('--resume', action='count',
                          help='Resume from saved model file rather than creating a new model at {model}'.format(model=model))
+    encoder.add_argument('--steps', '-u', metavar='size', default=steps, type=int,
+                         help='Step size to conserve memory and speedup training [default]: {steps}'.format(steps=steps))
     encoder.add_argument('--log_dir', '-r', default=log_dir, type=str, metavar='directory',
                          help='Specify the output directory for tensorflow logs: [default]: {log_dir}'.format(log_dir=log_dir))
     encoder.add_argument('--split', '-p', default=split, type=float, metavar='size',
@@ -63,6 +64,10 @@ def command_line():
                          help='Specify value to monitor for training/building model: [defaut]: {monitor}'.format(monitor=monitor))
     encoder.add_argument('--lr', '-a', default=lr, type=float, metavar='rate',
                          help='Set the learning rate for gradient descet optimizer: [default]: {lr}'.format(lr=lr))
+    encoder.add_argument('--decay', '-y', default=decay, type=float, metavar='rate',
+                         help='The rate in which to reduce the learning rate on plateau [default]: {decay}'.format(decay=decay))
+    encoder.add_argument('--optimizer-config', default=optimizer_config, type=str, metavar='config',
+                         help='Extra configurations given to the optimizer')
 
     # Decoder
     layers, temperature, output = 3, 0.8, 4000

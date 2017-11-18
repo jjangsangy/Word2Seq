@@ -11,6 +11,7 @@ import keras
 
 import numpy as np
 
+from chainmap import ChainMap
 from keras.callbacks import ModelCheckpoint, TensorBoard, ReduceLROnPlateau
 from keras.layers.core import Dense
 from keras.layers.recurrent import LSTM
@@ -28,9 +29,12 @@ p = functools.partial(print, sep='\t')
 def print_model(model, args):
     p('LSTM Layers:', args.layers)
     p('LSTM Dropout:', args.dropout)
-    p('LSTM Optimizer:', args.optimizer)
+    p('Optimizer:', args.optimizer)
+    p('Optim Config:', args.optimizer_config)
     p('Learning Rate:', args.lr)
-    print(model.summary())
+    p('Decay Rate:', args.decay)
+    model.summary()
+    print('\n', end='')
 
 
 def printer(args):
@@ -42,6 +46,9 @@ def printer(args):
       'of [{window}]'.format(window=args.window))
     p('Outout File:', args.model)
     p('Log Directory:', args.log_dir)
+    p('Step Size:', args.steps)
+    p('Val Split:', args.split)
+    print('\n', end='')
 
 
 def parameterize(args):
@@ -82,10 +89,10 @@ def gen(X, y, batch_size):
             yield re_x[i], re_y[i]
 
 
-def get_optimzer(opt, lr):
+def get_optimzer(opt, **kwargs):
     grab = operator.attrgetter(opt)
-    gradient_descent = grab(keras.optimizers)
-    return gradient_descent(lr=lr)
+    optimizer = grab(keras.optimizers)
+    return optimizer(**kwargs)
 
 
 def build_model(args):
@@ -95,6 +102,9 @@ def build_model(args):
     layers = list(reversed(range(1, args.layers)))
     params = dict(return_sequences=True, stateful=True, dropout=args.dropout,
                   batch_input_shape=(args.batch, args.window, len(CHARS)))
+    opt_args = ChainMap({'lr': args.lr},
+                        dict([i.split('=') for i in args.optimizer_config.split()]))
+    optimizer = get_optimzer(args.optimizer, **dict(opt_args))
     model = Sequential()
 
     while layers:
@@ -108,7 +118,7 @@ def build_model(args):
     model.add(Dense(len(CHARS), name='softmax', activation='softmax'))
 
     model.compile(loss=categorical_crossentropy,
-                  optimizer=get_optimzer(args.optimizer, args.lr),
+                  optimizer=optimizer,
                   metrics=['accuracy'])
 
     print_model(model, args)
@@ -128,7 +138,7 @@ def run(args):
     callbacks = [
         ModelCheckpoint(args.model, save_best_only=True,
                         monitor=args.monitor, verbose=args.verbose),
-        ReduceLROnPlateau(factor=0.2, patience=1,
+        ReduceLROnPlateau(factor=args.decay, patience=0,
                           monitor=args.monitor, verbose=args.verbose),
     ]
 
