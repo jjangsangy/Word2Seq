@@ -9,6 +9,8 @@ import sys
 
 from . cli import command_line
 
+__all__ = 'main'
+
 
 def main():
     """

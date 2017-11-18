@@ -21,7 +21,7 @@ setup(
     name='charrnn',
     author='Sang Han',
     version=ver['__version__'],
-    description='Automatic Web Article Summarizer',
+    description='Character Recurrent Neural Network For Text Generation',
     long_description='\n'.join(
         [
             open('README.rst', 'rb').read().decode('utf-8'),

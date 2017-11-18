@@ -7,20 +7,23 @@ from __future__ import print_function
 import os
 import functools
 import operator
-import keras
 
+
+import keras
 import numpy as np
 
-from chainmap import ChainMap
 from keras.callbacks import ModelCheckpoint, TensorBoard, ReduceLROnPlateau
 from keras.layers.core import Dense
 from keras.layers.recurrent import LSTM
 from keras.losses import categorical_crossentropy
 from keras.models import Sequential, load_model
 
-from .cli import command_line
-from .text import get_text
-from .text import CHARS, CHAR_IND, IND_CHAR
+from chainmap import ChainMap
+
+from . text import get_text
+from . const import CHARS, CHAR_IND, IND_CHAR
+
+__all__ = 'print_model', 'printer', 'parameterize', 'gen', 'get_optimzer', 'build_model'
 
 
 p = functools.partial(print, sep='\t')

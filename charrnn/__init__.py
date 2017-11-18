@@ -20,3 +20,8 @@ __license__ = 'Apache Software License Version 2.0'
 
 from . version import __version__
 from . version import __build__
+
+from . train import *
+from . const import *
+from . decoder import *
+from . cli import *

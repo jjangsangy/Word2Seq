@@ -7,6 +7,8 @@ from argparse import ArgumentParser
 from . version import __version__ as version
 from . version import __build__ as build
 
+__all__ = 'command_line',
+
 
 def command_line():
     """

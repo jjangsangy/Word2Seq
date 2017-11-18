@@ -2,12 +2,20 @@
 from __future__ import print_function
 
 import os
+import random
 
-from string import whitespace, punctuation, ascii_letters, digits
 
-CHARS = sorted(whitespace + punctuation + ascii_letters + digits)
-CHAR_IND = dict((c, i) for i, c in enumerate(CHARS))
-IND_CHAR = dict((i, c) for i, c in enumerate(CHARS))
+__all__ = 'get_text'
+
+
+def random_text(directory):
+    """
+    Reads a random file inside a directory of text files
+    """
+    datasets = [i for i in os.listdir(directory) if not i.startswith('.')]
+    filepath = '/'.join([directory, random.choice(datasets)])
+    with open(filepath, 'rt', encoding='utf-8') as dset:
+        return dset.read()
 
 
 def get_text(directory):

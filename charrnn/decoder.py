@@ -4,27 +4,25 @@ Decoder module for CharRNN
 """
 from __future__ import print_function
 
-import keras
-import sys
 import random
-import os
+import sys
 
 import numpy as np
 
-from . cli import command_line
-from . text import CHARS, IND_CHAR, CHAR_IND
+from . const import CHARS, IND_CHAR, CHAR_IND
+from . text import random_text
 
 np.seterr(divide='ignore')
 
+__all__ = 'sample', 'random_sentence'
 
-def random_text(directory):
+
+def print_char(char):
     """
-    Reads a random file inside a directory of text files
+    Prints a character and flushes
     """
-    datasets = [i for i in os.listdir(directory) if not i.startswith('.')]
-    filepath = '/'.join([directory, random.choice(datasets)])
-    with open(filepath, 'rt', encoding='utf-8') as dset:
-        return dset.read()
+    sys.stdout.write(char)
+    sys.stdout.flush()
 
 
 def sample(preds, t=1.0):
@@ -40,6 +38,9 @@ def sample(preds, t=1.0):
 
 
 def random_sentence(text, beam_size):
+    """
+    Grabs a random selection from a text.
+    """
     rand_point = random.randint(0, len(text) - 1)
     correction = text[rand_point:].find('.') + 2
     start_index = rand_point + correction
@@ -50,24 +51,21 @@ def run(args):
     """
     Main entry point for outputting trained network
     """
-    text = random_text(args.datasets)
-    window_size = args.window
+    import keras
 
     model = keras.models.load_model(args.model)
-    print(model.summary())
-
-    sentence = random_sentence(text, window_size)
-
+    text = random_text(args.datasets)
+    sentence = random_sentence(text, args.window)
     generated = sentence
 
+    model.summary()
     print('Using seed:', generated, sep='\n', end='\n\n')
 
-    sys.stdout.write(generated)
-    sys.stdout.flush()
+    print_char(generated)
 
     for _ in range(args.output):
 
-        x = np.zeros((args.batch, window_size, len(CHARS)))
+        x = np.zeros((args.batch, args.window, len(CHARS)))
         for t, char in enumerate(sentence):
             x[0, t, CHAR_IND[char]] = 1.
 
@@ -78,7 +76,6 @@ def run(args):
         generated += next_char
         sentence = sentence[1:] + next_char
 
-        sys.stdout.write(next_char)
-        sys.stdout.flush()
+        print_char(next_char)
 
-    sys.stdout.write('\n')
+    print_char('\n')
