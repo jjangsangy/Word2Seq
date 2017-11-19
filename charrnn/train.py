@@ -9,14 +9,7 @@ import functools
 import operator
 
 
-import keras
 import numpy as np
-
-from keras.callbacks import ModelCheckpoint, TensorBoard, ReduceLROnPlateau
-from keras.layers.core import Dense
-from keras.layers.recurrent import LSTM
-from keras.losses import categorical_crossentropy
-from keras.models import Sequential, load_model
 
 from chainmap import ChainMap
 
@@ -40,13 +33,13 @@ def print_model(model, args):
     print('\n', end='')
 
 
-def printer(args):
+def printer(text, args):
     """
     Helper print function on statistics
     """
-    p('Corpus Length:', len(args.text))
-    p('NB Sequences:', len(args.sentences),
-      'of [{window}]'.format(window=args.window))
+    p('Corpus Length:', len(text))
+    p('NB Batches:', len(text) // (args.batch * args.steps))
+    p('Window Size:', args.window)
     p('Outout File:', args.model)
     p('Log Directory:', args.log_dir)
     p('Step Size:', args.steps)
@@ -56,7 +49,7 @@ def printer(args):
 
 def gen_text(text, args):
     last_window = len(text) - args.window
-    for i in range(0, last_window):
+    for i in range(0, last_window, args.steps):
         yield text[i: i + args.window], text[i + args.window]
 
 
@@ -81,6 +74,7 @@ def gen(text, args):
 
 
 def get_optimzer(opt, **kwargs):
+    import keras
     grab = operator.attrgetter(opt)
     optimizer = grab(keras.optimizers)
     return optimizer(**kwargs)
@@ -90,6 +84,10 @@ def build_model(args):
     """
     Build a Stateful Stacked LSTM Network with n-stacks specified by args.layers
     """
+    from keras.layers.recurrent import LSTM
+    from keras.layers.core import Dense
+    from keras.models import Sequential
+
     layers = list(reversed(range(1, args.layers)))
     params = dict(return_sequences=True, stateful=True, dropout=args.dropout,
                   batch_input_shape=(args.batch, args.window, len(CHARS)))
@@ -108,7 +106,7 @@ def build_model(args):
 
     model.add(Dense(len(CHARS), name='softmax', activation='softmax'))
 
-    model.compile(loss=categorical_crossentropy,
+    model.compile(loss='categorical_crossentropy',
                   optimizer=optimizer,
                   metrics=['accuracy'])
 
@@ -121,10 +119,13 @@ def run(args):
     """
     Main entry point for training network
     """
+    from keras.callbacks import ModelCheckpoint, TensorBoard, ReduceLROnPlateau
+    from keras.models import load_model
     # Build Model
-    printer(args)
 
     text = get_text(args.datasets)
+
+    printer(text, args)
 
     model = (
         load_model(args.model) if os.path.exists(args.model) and args.resume else build_model(args)
