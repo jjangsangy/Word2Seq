@@ -5,7 +5,7 @@ import os
 import random
 
 
-__all__ = 'get_text'
+__all__ = 'get_text', 'random_text'
 
 
 def random_text(directory):

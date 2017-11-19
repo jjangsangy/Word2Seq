@@ -23,7 +23,7 @@ from chainmap import ChainMap
 from . text import get_text
 from . const import CHARS, CHAR_IND, IND_CHAR
 
-__all__ = 'print_model', 'printer', 'parameterize', 'gen', 'get_optimzer', 'build_model'
+__all__ = 'print_model', 'printer', 'gen', 'gen_text', 'get_optimzer', 'build_model'
 
 
 p = functools.partial(print, sep='\t')
@@ -54,42 +54,30 @@ def printer(args):
     print('\n', end='')
 
 
-def parameterize(args):
-    """
-    Parameterize argparse namespace with more parameters generated from dataset
-    """
-    args.text = get_text(args.datasets)
-    args.sentences = []
-    args.next_chars = []
-
-    for i in range(0, len(args.text) - args.window, args.steps):
-        args.sentences.append(args.text[i: i + args.window])
-        args.next_chars.append(args.text[i + args.window])
-
-    # Print all the params
-    printer(args)
-
-    max_window = len(args.sentences) - (len(args.sentences) % args.batch)
-    args.sentences = args.sentences[0: max_window]
-    args.next_chars = args.next_chars[0: max_window]
-
-    X = np.zeros((max_window, args.window, len(CHARS)), dtype=np.bool)
-    y = np.zeros((max_window,              len(CHARS)), dtype=np.bool)
-
-    for i, sentence in enumerate(args.sentences):
-        for t, char in enumerate(sentence):
-            X[i, t, CHAR_IND[char]] = 1
-        y[i, CHAR_IND[args.next_chars[i]]] = 1
-
-    return X, y
+def gen_text(text, args):
+    last_window = len(text) - args.window
+    for i in range(0, last_window):
+        yield text[i: i + args.window], text[i + args.window]
 
 
-def gen(X, y, batch_size):
-    re_x = X.reshape((X.shape[0] // batch_size, batch_size, X.shape[1], X.shape[2]))
-    re_y = y.reshape((y.shape[0] // batch_size, batch_size, y.shape[1]))
+def gen(text, args):
+    g = gen_text(text, args)
     while True:
-        for i in range(len(re_x)):
-            yield re_x[i], re_y[i]
+        try:
+            train_window, test_window = [], []
+            for i in range(args.batch):
+                train, test = next(g)
+                X = np.zeros((args.batch, args.window, len(CHARS)), dtype=np.bool)
+                y = np.zeros((args.batch,              len(CHARS)), dtype=np.bool)
+                train_window.append(train)
+                test_window.append(test)
+            for j, sentence in enumerate(train_window):
+                for t, char in enumerate(sentence):
+                    X[j, t, CHAR_IND[char]] = True
+                y[j, CHAR_IND[test_window[j]]] = True
+            yield X, y
+        except StopIteration:
+            g = gen_text(text, args)
 
 
 def get_optimzer(opt, **kwargs):
@@ -134,6 +122,10 @@ def run(args):
     Main entry point for training network
     """
     # Build Model
+    printer(args)
+
+    text = get_text(args.datasets)
+
     model = (
         load_model(args.model) if os.path.exists(args.model) and args.resume else build_model(args)
     )
@@ -149,18 +141,15 @@ def run(args):
         callbacks.append(TensorBoard(log_dir=args.log_dir, histogram_freq=10,
                                      write_grads=True, batch_size=args.batch))
 
-    X, y = parameterize(args)
+    v_split = round((len(text) // args.batch) * (1 - args.split)) * args.batch
 
-    v_split = round((len(X) // args.batch) * (1 - args.split)) * args.batch
-
-    x_train, y_train = X[:v_split], y[:v_split]
-    x_val, y_val = X[v_split:], y[v_split:]
+    t_train, t_val = text[:v_split], text[v_split:]
 
     # Go Get Some Coffee
-    model.fit_generator(generator=gen(x_train, y_train, args.batch),
-                        steps_per_epoch=len(x_train) // args.batch,
-                        validation_data=gen(x_val, y_val, args.batch),
-                        validation_steps=len(x_val) // args.batch,
+    model.fit_generator(generator=gen(t_train, args),
+                        steps_per_epoch=len(t_train) // args.batch,
+                        validation_data=gen(t_val, args),
+                        validation_steps=len(t_val) // args.batch,
                         epochs=args.epochs,
                         callbacks=callbacks,
                         use_multiprocessing=True,
