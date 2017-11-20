@@ -56,7 +56,7 @@ def run_gen(tr, batch, window, ind):
     X = np.zeros((batch, window, len(CHARS)), dtype=np.bool)
     y = np.zeros((batch,         len(CHARS)), dtype=np.bool)
     for i in range(batch):
-        y[i][tr[i + window + ind]] = True
+        y[i, tr[i + window + ind]] = True
         for j in range(window):
             X[i, j, tr[j + i + ind]] = True
     return X, y
