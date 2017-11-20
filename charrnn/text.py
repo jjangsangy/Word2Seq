@@ -4,8 +4,17 @@ from __future__ import print_function
 import os
 import random
 
+import numpy as np
 
-__all__ = 'get_text', 'random_text'
+
+from . const import TRANS_TABLE
+
+__all__ = 'get_text', 'random_text', 'translate'
+
+
+def translate(text, batch=128):
+    trans = text.translate(TRANS_TABLE)
+    return np.fromstring(trans[:len(trans) - len(trans) % batch], dtype='b')
 
 
 def random_text(directory):

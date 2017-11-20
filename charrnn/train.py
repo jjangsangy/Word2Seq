@@ -10,41 +10,14 @@ import operator
 
 
 import numpy as np
+import numba
 
-from chainmap import ChainMap
 
-from . text import get_text
+from . text import get_text, translate
+from . output import print_model, printer
 from . const import CHARS, CHAR_IND, IND_CHAR
 
-__all__ = 'print_model', 'printer', 'gen_batch', 'get_optimzer', 'build_model', 'tweak_lr'
-
-
-p = functools.partial(print, sep='\t')
-
-
-def print_model(model, args):
-    p('Step Size:', args.steps)
-    p('Val Split:', args.split)
-    p('LSTM Layers:', args.layers)
-    p('LSTM Dropout:', args.dropout)
-    p('Optimizer:', args.optimizer)
-    p('Learning Rate:', args.lr)
-    p('Decay Rate:', args.decay)
-    model.summary()
-    print('\n', end='')
-
-
-def printer(t_train, t_val, args):
-    """
-    Helper print function on statistics
-    """
-    p('Corpus Length:', len(t_train) + len(t_val))
-    p('Train Batches:', len(t_train) // (args.batch * args.steps))
-    p('Val Batches:', len(t_val) // (args.batch))
-    p('Window Size:', args.window)
-    p('Outout File:', args.model)
-    p('Log Directory:', args.log_dir)
-    print('\n', end='')
+__all__ = 'gen_batch', 'get_optimzer', 'build_model', 'tweak_lr'
 
 
 def tweak_lr(optimizer):
@@ -64,37 +37,29 @@ def get_optimzer(opt, **kwargs):
     return optimizer(**kwargs)
 
 
-def gen_text(text, args):
-    last_window = len(text) - args.window
-    for i in range(last_window):
-        yield text[i: i + args.window], text[i + args.window]
-
-
-def gen_batch(text, args):
+def gen_batch(text, batch, window):
     """
     Infinitely generate batches of data of size args.batch
     """
-    generator = gen_text(text, args)
+    tr, ind = translate(text, batch=batch), 0
+
     while True:
         try:
-            # Create New Batch
-            train_window, test_window = [], []
-            X = np.zeros((args.batch, args.window, len(CHARS)), dtype=np.bool)
-            y = np.zeros((args.batch,              len(CHARS)), dtype=np.bool)
+            yield run_gen(tr, batch, window, ind)
+            ind += batch
+        except (IndexError, StopIteration):
+            ind = 0
 
-            for _ in range(args.batch):
-                train, test = next(generator)
-                train_window.append(train)
-                test_window.append(test)
 
-            for i, sentence in enumerate(train_window):
-                for t, char in enumerate(sentence):
-                    X[i, t, CHAR_IND[char]] = True
-                y[i, CHAR_IND[test_window[i]]] = True
-            yield X, y
-
-        except StopIteration:
-            generator = gen_text(text, args)
+@numba.jit
+def run_gen(tr, batch, window, ind):
+    X = np.zeros((batch, window, len(CHARS)), dtype=np.bool)
+    y = np.zeros((batch,         len(CHARS)), dtype=np.bool)
+    for i in range(batch):
+        y[i][tr[i + window + ind]] = True
+        for j in range(window):
+            X[i, j, tr[j + i + ind]] = True
+    return X, y
 
 
 def build_model(args):
@@ -163,6 +128,7 @@ def run(args):
     from keras.models import load_model
     # Build Model
 
+    generator = functools.partial(gen_batch, batch=args.batch, window=args.window)
     t_train, t_val = train_val_split(get_text(args.datasets), args)
 
     printer(t_train, t_val, args)
@@ -172,9 +138,9 @@ def run(args):
     )
 
     # Go Get Some Coffee
-    model.fit_generator(generator=gen_batch(t_train, args),
+    model.fit_generator(generator=generator(t_train),
                         steps_per_epoch=len(t_train) // (args.batch * args.steps),
-                        validation_data=gen_batch(t_val, args),
+                        validation_data=generator(t_val),
                         validation_steps=len(t_val) // args.batch,
                         epochs=args.epochs,
                         callbacks=get_callbacks(args),
