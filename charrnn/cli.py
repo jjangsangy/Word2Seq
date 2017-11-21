@@ -48,8 +48,6 @@ def command_line():
                          help='Resume from saved model file rather than creating a new model at {model}'.format(model=model))
     encoder.add_argument('--window', '-w', default=window, type=int, metavar='length',
                          help='Specify the size of the window size to train on: [default]: {window}'.format(window=window))
-    encoder.add_argument('--steps', '-u', metavar='size', default=steps, type=int,
-                         help='Step size to conserve memory and speedup training [default]: {steps}'.format(steps=steps))
     encoder.add_argument('--log_dir', '-r', default=log_dir, type=str, metavar='directory',
                          help='Specify the output directory for tensorflow logs: [default]: {log_dir}'.format(log_dir=log_dir))
     encoder.add_argument('--split', '-p', default=split, type=float, metavar='size',

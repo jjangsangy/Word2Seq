@@ -22,7 +22,6 @@ def print_x(X, ind=0):
 
 
 def print_model(model, args):
-    p('Step Size:', args.steps)
     p('Val Split:', args.split)
     p('LSTM Layers:', args.layers)
     p('LSTM Dropout:', args.dropout)
@@ -38,7 +37,7 @@ def printer(t_train, t_val, args):
     Helper print function on statistics
     """
     p('Corpus Length:', len(t_train) + len(t_val))
-    p('Train Batches:', len(t_train) // (args.batch * args.steps))
+    p('Train Batches:', len(t_train) // args.batch)
     p('Val Batches:', len(t_val) // (args.batch))
     p('Window Size:', args.window)
     p('Outout File:', args.model)

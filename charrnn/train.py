@@ -7,11 +7,10 @@ from __future__ import print_function
 import os
 import functools
 import operator
-
+import h5py
+import json
 
 import numpy as np
-import numba
-
 
 from . text import get_text, translate
 from . output import print_model, printer
@@ -30,11 +29,22 @@ def tweak_lr(optimizer):
     return default_values[optimizer.lower()]
 
 
-def get_optimzer(opt, **kwargs):
+def get_optimzer(args):
     import keras
-    grab = operator.attrgetter(opt)
+
+    opt_args = dict(clipvalue=4.0, lr=args.lr)
+
+    if os.path.exists(args.model) and args.resume and not args.lr:
+        with h5py.File(args.model) as h5file:
+            config = json.loads(h5file.attrs['training_config'])
+            opt_args = config.get('optimizer_config', {}).get('config', opt_args)
+
+    opt_args['lr'] = args.lr = opt_args.get('lr', None) or tweak_lr(args.optimizer)
+
+    grab = operator.attrgetter(args.optimizer)
     optimizer = grab(keras.optimizers)
-    return optimizer(**kwargs)
+
+    return optimizer(**opt_args)
 
 
 def gen_batch(text, batch, window):
@@ -67,12 +77,7 @@ def build_model(args):
     layers = list(reversed(range(1, args.layers)))
     params = dict(return_sequences=True, stateful=True, dropout=args.dropout,
                   batch_input_shape=(args.batch, args.window, len(CHARS)))
-
-    opt_args = {
-        'lr': args.lr if args.lr else tweak_lr(args.optimizer),
-        'clipvalue': 4.0
-    }
-    optimizer = get_optimzer(args.optimizer, **dict(opt_args))
+    optimizer = get_optimzer(args)
 
     model = Sequential()
 
@@ -110,7 +115,7 @@ def get_callbacks(args):
     callbacks = [
         CharRNNCheckpoint(args.model, args.window, save_best_only=True,
                           monitor=args.monitor, verbose=args.verbose),
-        ReduceLROnPlateau(factor=args.decay, patience=0, cooldown=args.steps,
+        ReduceLROnPlateau(factor=args.decay, patience=0,
                           monitor=args.monitor, verbose=args.verbose),
     ]
     if args.log_dir:
@@ -136,7 +141,7 @@ def run(args):
 
     # Go Get Some Coffee
     model.fit_generator(generator=generator(t_train),
-                        steps_per_epoch=len(t_train) // (args.batch * args.steps),
+                        steps_per_epoch=len(t_train) // args.batch,
                         validation_data=generator(t_val),
                         validation_steps=len(t_val) // args.batch,
                         epochs=args.epochs,
