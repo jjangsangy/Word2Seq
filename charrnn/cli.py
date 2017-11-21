@@ -24,8 +24,6 @@ def command_line():
     model, window, batch, datasets = 'model.h5', 40, 128, 'datasets'
     parser.add_argument('--model', '-m', default=model, type=str, metavar='file',
                         help='Specify the model hdf5 file to save to or load from: [default]: {model}'.format(model=model))
-    parser.add_argument('--window', '-w', default=window, type=int, metavar='length',
-                        help='Specify the size of the window size to train on: [default]: {window}'.format(window=window))
     parser.add_argument('--batch', '-b',  metavar='size', default=batch,
                         type=int, help='Specify the input batch size for LSTM layers: [default]: {batch}'.format(batch=batch))
     parser.add_argument('--datasets', '-t', metavar='directory', default=datasets, type=str,
@@ -48,6 +46,8 @@ def command_line():
 
     encoder.add_argument('--resume', action='count',
                          help='Resume from saved model file rather than creating a new model at {model}'.format(model=model))
+    encoder.add_argument('--window', '-w', default=window, type=int, metavar='length',
+                         help='Specify the size of the window size to train on: [default]: {window}'.format(window=window))
     encoder.add_argument('--steps', '-u', metavar='size', default=steps, type=int,
                          help='Step size to conserve memory and speedup training [default]: {steps}'.format(steps=steps))
     encoder.add_argument('--log_dir', '-r', default=log_dir, type=str, metavar='directory',

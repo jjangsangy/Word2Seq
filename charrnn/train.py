@@ -42,24 +42,18 @@ def gen_batch(text, batch, window):
     Infinitely generate batches of data of size args.batch
     """
     tr, ind = translate(text, batch=batch), 0
-
     while True:
         try:
-            yield run_gen(tr, batch, window, ind)
+            X = np.zeros((batch, window, len(CHARS)), dtype=np.bool)
+            y = np.zeros((batch,         len(CHARS)), dtype=np.bool)
+            for i in range(batch):
+                y[i, tr[i + window + ind]] = True
+                for j in range(window):
+                    X[i, j, tr[j + i + ind]] = True
+            yield X, y
             ind += batch
-        except (IndexError, StopIteration):
+        except:
             ind = 0
-
-
-@numba.jit
-def run_gen(tr, batch, window, ind):
-    X = np.zeros((batch, window, len(CHARS)), dtype=np.bool)
-    y = np.zeros((batch,         len(CHARS)), dtype=np.bool)
-    for i in range(batch):
-        y[i, tr[i + window + ind]] = True
-        for j in range(window):
-            X[i, j, tr[j + i + ind]] = True
-    return X, y
 
 
 def build_model(args):
@@ -96,7 +90,9 @@ def build_model(args):
                   optimizer=optimizer,
                   metrics=['accuracy'])
 
-    print_model(model, args)
+    if os.path.exists(args.model) and args.resume:
+        print('Resuming Training')
+        model.load_weights(args.model)
 
     return model
 
@@ -107,11 +103,13 @@ def train_val_split(text, args):
 
 
 def get_callbacks(args):
-    from keras.callbacks import ModelCheckpoint, TensorBoard, ReduceLROnPlateau
+    from keras.callbacks import TensorBoard, ReduceLROnPlateau
+
+    from . callbacks import CharRNNCheckpoint
 
     callbacks = [
-        ModelCheckpoint(args.model, save_best_only=True,
-                        monitor=args.monitor, verbose=args.verbose),
+        CharRNNCheckpoint(args.model, args.window, save_best_only=True,
+                          monitor=args.monitor, verbose=args.verbose),
         ReduceLROnPlateau(factor=args.decay, patience=0, cooldown=args.steps,
                           monitor=args.monitor, verbose=args.verbose),
     ]
@@ -126,16 +124,15 @@ def run(args):
     Main entry point for training network
     """
     from keras.models import load_model
-    # Build Model
-
     generator = functools.partial(gen_batch, batch=args.batch, window=args.window)
     t_train, t_val = train_val_split(get_text(args.datasets), args)
 
     printer(t_train, t_val, args)
 
-    model = (
-        load_model(args.model) if os.path.exists(args.model) and args.resume else build_model(args)
-    )
+    # Build Model
+    model = build_model(args)
+
+    print_model(model, args)
 
     # Go Get Some Coffee
     model.fit_generator(generator=generator(t_train),

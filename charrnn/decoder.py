@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import random
 import sys
+import h5py
 
 import numpy as np
 
@@ -47,25 +48,29 @@ def random_sentence(text, beam_size):
     return text[start_index: start_index + beam_size]
 
 
+def get_window(model):
+    with h5py.File(model, 'r') as h5file:
+        return h5file.attrs['window']
+
+
 def run(args):
     """
     Main entry point for outputting trained network
     """
     import keras
-
+    window = get_window(args.model)
     model = keras.models.load_model(args.model)
     text = random_text(args.datasets)
-    sentence = random_sentence(text, args.window)
-    generated = sentence
+    sentence = random_sentence(text, window)
 
     model.summary()
-    print('Using seed:', generated, sep='\n', end='\n\n')
+    print('Using seed:', sentence, sep='\n', end='\n\n')
 
-    print_char(generated)
+    print_char(sentence)
 
     for _ in range(args.output):
 
-        x = np.zeros((args.batch, args.window, len(CHARS)))
+        x = np.zeros((args.batch, window, len(CHARS)))
         for t, char in enumerate(sentence):
             x[0, t, CHAR_IND[char]] = 1.
 
@@ -73,7 +78,6 @@ def run(args):
         next_index = sample(preds[0], t=args.temperature)
         next_char = IND_CHAR[next_index]
 
-        generated += next_char
         sentence = sentence[1:] + next_char
 
         print_char(next_char)
