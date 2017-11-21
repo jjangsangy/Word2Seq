@@ -12,11 +12,13 @@ import json
 
 import numpy as np
 
+from os.path import splitext
+
 from . text import get_text, translate
 from . output import print_model, printer
 from . const import CHARS, CHAR_IND, IND_CHAR
 
-__all__ = 'gen_batch', 'get_optimzer', 'build_model', 'tweak_lr'
+__all__ = 'gen_batch', 'get_optimzer', 'build_model'
 
 
 def tweak_lr(optimizer):
@@ -108,15 +110,16 @@ def train_val_split(text, args):
 
 
 def get_callbacks(args):
-    from keras.callbacks import TensorBoard, ReduceLROnPlateau
+    from keras.callbacks import TensorBoard, CSVLogger
 
-    from . callbacks import CharRNNCheckpoint
+    from . callbacks import CharRNNCheckpoint, AdvancedLRScheduler
 
     callbacks = [
+        AdvancedLRScheduler(decay_ratio=0.5,
+                            monitor=args.monitor, verbose=args.verbose),
         CharRNNCheckpoint(args.model, args.window, save_best_only=True,
                           monitor=args.monitor, verbose=args.verbose),
-        ReduceLROnPlateau(factor=args.decay, patience=0,
-                          monitor=args.monitor, verbose=args.verbose),
+        CSVLogger(os.extsep.join([splitext(args.model)[0], 'csv']), append=bool(args.resume)),
     ]
     if args.log_dir:
         callbacks.append(TensorBoard(log_dir=args.log_dir, histogram_freq=10,
