@@ -2,9 +2,12 @@
 """
 Custom keras callbacks modules
 """
+from __future__ import print_function
+
 import h5py
 import numpy as np
 
+from builtins import super
 from keras.callbacks import ModelCheckpoint, Callback
 from keras import backend as K
 
@@ -23,7 +26,7 @@ class CharRNNCheckpoint(ModelCheckpoint):
         window: window size to save to file
         """
         self.window = window
-        super(ModelCheckpoint, self).__init__(filepath, **kwargs)
+        super().__init__(filepath, **kwargs)
 
     def on_epoch_end(self, epoch, logs=None):
         super().on_epoch_end(epoch, logs=logs)
@@ -34,62 +37,90 @@ class CharRNNCheckpoint(ModelCheckpoint):
 class AdvancedLRScheduler(Callback):
     '''
     Schedule learning rate when a monitored quantity does not
-    improve over a period of time.
+    improve over a period of time or at a particular frequency.
     '''
 
-    def __init__(self, monitor='val_loss', patience=0,
-                 verbose=False, mode='auto', decay_ratio=0.5):
+    def __init__(self, monitor='val_loss', cooldown=0,
+                 verbose=False, mode='auto', factor=0.5,
+                 min_lr=0, frequency=None):
         """
-        monitor: quantity to be monitored.
-        patience: number of epochs with no improvement
-            after which lr will be lowered.
-        verbose: verbosity mode.
-        mode: one of {auto, min, max}. In 'min' mode,
-            training will stop when the quantity
-            monitored has stopped decreasing; in 'max'
-            mode it will stop when the quantity
-            monitored has stopped increasing.
+        monitor: Quantity to be monitored.
+
+        cooldown: Number of epochs with no improvement
+                  after which lr will be lowered.
+
+        verbose: Verbosity mode.
+
+        mode: One of {auto, min, max}. In 'min' mode,
+              training will stop when the quantity
+              monitored has stopped decreasing; in 'max'
+              mode it will stop when the quantity
+              monitored has stopped increasing.
+
+        factor: Magnitude in which to learning rate decays
+
+        min_lr: Lower bound on the learning rate.
+
+        frequency: Schedule learning rate reduction frequency.
+                   Set this to None to disable
         """
-        super(Callback, self).__init__()
+        super().__init__()
 
         self.monitor = monitor
-        self.patience = patience
+        self.cooldown = cooldown
         self.verbose = verbose
+        self.factor = factor
+        self.min_lr = min_lr
+        self.frequency = frequency
         self.wait = 0
-        self.decay_ratio = decay_ratio
+
+        assert mode in {'auto', 'min', 'max'}
+
+        if mode == 'auto':
+            mode = 'max' if 'acc' in monitor else 'min'
 
         if mode == 'min':
             self.monitor_op = np.less
             self.best = np.Inf
-        elif mode == 'max':
+
+        if mode == 'max':
             self.monitor_op = np.greater
             self.best = -np.Inf
-        else:
-            if 'acc' in self.monitor:
-                self.monitor_op = np.greater
-                self.best = -np.Inf
-            else:
-                self.monitor_op = np.less
-                self.best = np.Inf
+
+    def increment(self):
+        self.wait += 1
+
+    def reset(self):
+        self.wait = 0
+
+    def reduce_lr(self, lr):
+        # As long as we are not inside a cooldown
+        if self.wait >= self.cooldown:
+            lr *= self.factor
+            K.set_value(self.model.optimizer.lr, max(lr, self.min_lr))
+            if self.verbose:
+                print('\nReducing learning rate', end='')
+            self.reset()
+
+    def reduce_on_frequency(self, epoch):
+        if not self.frequency:
+            return False
+        return not epoch % self.frequency
 
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
 
         current = logs.get(self.monitor)
-        current_lr = K.get_value(self.model.optimizer.lr)
+        lr = K.get_value(self.model.optimizer.lr)
 
-        print("\nLearning rate:", current_lr)
-
-        if self.monitor_op(current, self.best):
-            self.best = current
-            self.wait = 0
+        # LR did not improve or frequency
+        if not self.monitor_op(current, self.best):
+            self.reduce_lr(lr)
+        elif self.reduce_on_frequency(epoch + 1):
+            self.reduce_lr(lr)
         else:
-            if self.wait >= self.patience:
-                if self.verbose > 0:
-                    print('Epoch %05d: reducing learning rate' % (epoch))
-                    current_lr = K.get_value(self.model.optimizer.lr)
-                    new_lr = current_lr * self.decay_ratio
-                    K.set_value(self.model.optimizer.lr, new_lr)
-                    self.wait = 0
+            self.best = current
 
-            self.wait += 1
+        self.increment()
+
+        print("\nLearning rate:", lr)

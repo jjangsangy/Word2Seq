@@ -12,6 +12,7 @@ import numpy as np
 
 from . const import CHARS, IND_CHAR, CHAR_IND
 from . text import random_text
+from . utils import get_window
 
 np.seterr(divide='ignore')
 
@@ -46,11 +47,6 @@ def random_sentence(text, beam_size):
     correction = text[rand_point:].find('.') + 2
     start_index = rand_point + correction
     return text[start_index: start_index + beam_size]
-
-
-def get_window(model):
-    with h5py.File(model, 'r') as h5file:
-        return h5file.attrs['window']
 
 
 def run(args):

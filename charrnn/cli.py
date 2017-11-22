@@ -42,7 +42,7 @@ def command_line():
     # Encoder
     dropout, layers, log_dir, lr = 0.2, 3, None, None
     epochs, optimizer, monitor, split = 100, 'nadam', 'val_loss', 0.15
-    steps, decay = 5, 0.5
+    decay, decay_freq = 0.5, None
 
     encoder.add_argument('--resume', action='count',
                          help='Resume from saved model file rather than creating a new model at {model}'.format(model=model))
@@ -66,6 +66,8 @@ def command_line():
                          help='Set the learning rate for gradient descet optimizer: [default]: {lr}'.format(lr=lr))
     encoder.add_argument('--decay', '-y', default=decay, type=float, metavar='rate',
                          help='The rate in which to reduce the learning rate on plateau [default]: {decay}'.format(decay=decay))
+    encoder.add_argument('--decay-freq', '-f', default=decay_freq, type=int, metavar='frequency',
+                         help='The frequency in which to reduce the learning rate [default]: {decay_freq}'.format(decay_freq=decay_freq))
 
     # Decoder
     layers, temperature, output = 3, 0.8, 4000

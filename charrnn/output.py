@@ -28,6 +28,7 @@ def print_model(model, args):
     p('Optimizer:', args.optimizer)
     p('Learning Rate:', args.lr)
     p('Decay Rate:', args.decay)
+    p('Decay Freq:', args.decay_freq)
     model.summary()
     print('\n', end='')
 
