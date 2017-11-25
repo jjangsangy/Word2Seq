@@ -87,6 +87,7 @@ def build_model(args):
 
     if os.path.exists(args.model) and args.resume:
         print('Resuming Training')
+        args.window = get_window(args.model)
         model = load_model(args.model)
         K.set_value(model.optimizer.lr, args.lr)
     else:
@@ -137,10 +138,7 @@ def run(args):
     """
     Main entry point for training network
     """
-    from keras.models import load_model
-
-    if args.resume and os.path.exists(args.model):
-        args.window = get_window(args.model)
+    assert args.layers > 0
 
     # Currying Generator Function
     generator = functools.partial(gen_batch, batch=args.batch, window=args.window)
