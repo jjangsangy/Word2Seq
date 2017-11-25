@@ -73,6 +73,8 @@ def build_model(args):
     """
     Build a Stateful Stacked LSTM Network with n-stacks specified by args.layers
     """
+    from keras import backend as K
+
     from keras.layers.recurrent import LSTM
     from keras.layers.core import Dense
     from keras.models import Sequential, load_model
@@ -83,25 +85,26 @@ def build_model(args):
 
     optimizer = get_optimzer(args)
 
-    model = Sequential()
-
-    while layers:
-        layers.pop()
-        model.add(LSTM(args.batch, **params))
-    else:
-        # Last Layer is Flat
-        del params['return_sequences']
-        model.add(LSTM(args.batch, **params))
-
-    model.add(Dense(len(CHARS), name='softmax', activation='softmax'))
-
-    model.compile(loss='categorical_crossentropy',
-                  optimizer=optimizer,
-                  metrics=['accuracy'])
-
     if os.path.exists(args.model) and args.resume:
         print('Resuming Training')
         model = load_model(args.model)
+        K.set_value(model.optimizer.lr, args.lr)
+    else:
+        model = Sequential()
+
+        while layers:
+            layers.pop()
+            model.add(LSTM(args.batch, **params))
+        else:
+            # Last Layer is Flat
+            del params['return_sequences']
+            model.add(LSTM(args.batch, **params))
+
+        model.add(Dense(len(CHARS), name='softmax', activation='softmax'))
+
+        model.compile(loss='categorical_crossentropy',
+                      optimizer=optimizer,
+                      metrics=['accuracy'])
 
     return model
 

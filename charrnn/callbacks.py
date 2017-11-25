@@ -23,6 +23,7 @@ class CharRNNCheckpoint(ModelCheckpoint):
     def __init__(self, filepath, window, **kwargs):
         """
         filepath: hdf5 file to save weights and configurations
+
         window: window size to save to file
         """
         self.window = window
@@ -42,12 +43,12 @@ class AdvancedLRScheduler(Callback):
 
     def __init__(self, monitor='val_loss', cooldown=0,
                  verbose=False, mode='auto', factor=0.5,
-                 min_lr=0, frequency=None):
+                 min_lr=0, frequency=None, epsilon=1e-4):
         """
         monitor: Quantity to be monitored.
 
-        cooldown: Number of epochs with no improvement
-                  after which lr will be lowered.
+        cooldown: Number of epochs to wait before resuming normal
+                  operation after lr has been reduced
 
         verbose: Verbosity mode.
 
@@ -63,6 +64,9 @@ class AdvancedLRScheduler(Callback):
 
         frequency: Schedule learning rate reduction frequency.
                    Set this to None to disable
+
+        epsilon: threshold for measuring the new optimum,
+                 to only focus on significant changes.
         """
         super().__init__()
 
@@ -72,6 +76,8 @@ class AdvancedLRScheduler(Callback):
         self.factor = factor
         self.min_lr = min_lr
         self.frequency = frequency
+        self.epsilon = epsilon
+        self.lr_epsilon = self.min_lr * epsilon
         self.wait = 0
 
         assert mode in {'auto', 'min', 'max'}
@@ -80,27 +86,31 @@ class AdvancedLRScheduler(Callback):
             mode = 'max' if 'acc' in monitor else 'min'
 
         if mode == 'min':
-            self.monitor_op = np.less
+            self.monitor_op = lambda a, b: np.less(a, b - self.epsilon)
             self.best = np.Inf
 
         if mode == 'max':
-            self.monitor_op = np.greater
+            self.monitor_op = lambda a, b: np.greater(a, b + self.epsilon)
             self.best = -np.Inf
 
-    def increment(self):
-        self.wait += 1
+    def decrement_cooldown(self):
+        self.wait -= 1
 
-    def reset(self):
-        self.wait = 0
+    def reset_cooldown(self):
+        self.wait = self.cooldown
+
+    def in_cooldown(self):
+        return self.wait > 0
 
     def reduce_lr(self, lr):
-        # As long as we are not inside a cooldown
-        if self.wait >= self.cooldown:
+
+        if not self.in_cooldown() and lr > self.min_lr + self.lr_epsilon:
+            self.reset_cooldown()
             lr *= self.factor
             K.set_value(self.model.optimizer.lr, max(lr, self.min_lr))
             if self.verbose:
                 print('\nReducing learning rate', end='')
-            self.reset()
+        return max(lr, self.min_lr)
 
     def reduce_on_frequency(self, epoch):
         if not self.frequency:
@@ -115,12 +125,12 @@ class AdvancedLRScheduler(Callback):
 
         # LR did not improve or frequency
         if not self.monitor_op(current, self.best):
-            self.reduce_lr(lr)
+            lr = self.reduce_lr(lr)
         elif self.reduce_on_frequency(epoch + 1):
-            self.reduce_lr(lr)
+            lr = self.reduce_lr(lr)
         else:
             self.best = current
 
-        self.increment()
+        self.decrement_cooldown()
 
         print("\nLearning rate:", lr)

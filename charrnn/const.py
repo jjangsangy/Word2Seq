@@ -3,7 +3,7 @@
 String constants used to one hot encode LSTM
 """
 
-from string import whitespace, punctuation, ascii_letters, digits
+from string import whitespace, punctuation, digits, ascii_letters
 
 CHARS = sorted(whitespace + punctuation + ascii_letters + digits)
 CHAR_IND = dict((c, i) for i, c in enumerate(CHARS))
