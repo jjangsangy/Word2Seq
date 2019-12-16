@@ -40,7 +40,7 @@ setup(
     install_requires=[
         'h5py==2.7.1',
         'Keras==2.0.9',
-        'tensorflow==1.4.0rc0',
+        'tensorflow==1.15.0',
         'future',
     ],
     classifiers=[
